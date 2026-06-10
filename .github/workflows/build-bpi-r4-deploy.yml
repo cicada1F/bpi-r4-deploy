@@ -6,9 +6,11 @@ on:
       variant:
         description: 'Build variant'
         required: true
-        default: 'standard'
+        default: 'pro'
         type: choice
         options:
+          - pro
+          - pro-wired
           - standard
           - wired
       repo_commit:
@@ -22,7 +24,7 @@ permissions:
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
   OPENWRT_COMMIT: "13ff2256e5dd9bc070f9a9c6a673bff4a9191837"
-  MTK_COMMIT: "dceb45f8cb945bce16f0e09f8d2cd974c9f0ce58"
+  MTK_COMMIT: "6f8821766be62798990eec5d909fee4594461cb0"
 
 jobs:
   build:
@@ -41,6 +43,12 @@ jobs:
           if [ "$VARIANT" = "wired" ]; then
             echo "BUILDER=./builder-wired-universal.sh" >> $GITHUB_ENV
             echo "RELEASE_TAGS=release-4gb-wired release-4gb-poe-wired release-8gb-wired release-8gb-poe-wired release-8gb-wired-unifi release-8gb-poe-wired-unifi" >> $GITHUB_ENV
+          elif [ "$VARIANT" = "pro" ]; then
+            echo "BUILDER=./builder-pro-8x.sh" >> $GITHUB_ENV
+            echo "RELEASE_TAGS=release-pro-8x-standard" >> $GITHUB_ENV
+          elif [ "$VARIANT" = "pro-wired" ]; then
+            echo "BUILDER=./builder-pro-8x-wired.sh" >> $GITHUB_ENV
+            echo "RELEASE_TAGS=release-pro-8x-wired release-pro-8x-unifi" >> $GITHUB_ENV
           else
             echo "BUILDER=./builder-wifimgr-universal.sh" >> $GITHUB_ENV
             echo "RELEASE_TAGS=release-4gb-standard release-4gb-poe release-8gb-standard release-8gb-poe" >> $GITHUB_ENV
@@ -128,6 +136,7 @@ jobs:
         env:
           OPENWRT_COMMIT: ${{ env.OPENWRT_COMMIT }}
           MTK_COMMIT: ${{ env.MTK_COMMIT }}
+          MTK_FEED_TARBALL: repo-cache/mtk-openwrt-feeds.tar.gz
 
       - name: Prepare release artifacts
         run: |
@@ -157,45 +166,61 @@ jobs:
             cd ..
           }
 
-          # 4GB non-poe
-          make_release_dir rel-4gb \
-            "openwrt-mediatek-filogic-bananapi_bpi-r4-squashfs-sysupgrade.itb" \
-            "bpi-r4.itb" \
-            "openwrt-mediatek-filogic-bananapi_bpi-r4-nvme-img.bin" \
-            "openwrt-mediatek-filogic-bananapi_bpi-r4-sdcard.img.gz" \
-            "openwrt-mediatek-filogic-bananapi_bpi-r4-emmc-img.bin" \
-            "openwrt-mediatek-filogic-bananapi_bpi-r4-snand-img.bin"
+          # Standard R4 variants (not built by pro/pro-wired)
+          if [ "$VARIANT" != "pro" ] && [ "$VARIANT" != "pro-wired" ]; then
+            # 4GB non-poe
+            make_release_dir rel-4gb \
+              "openwrt-mediatek-filogic-bananapi_bpi-r4-squashfs-sysupgrade.itb" \
+              "bpi-r4.itb" \
+              "openwrt-mediatek-filogic-bananapi_bpi-r4-nvme-img.bin" \
+              "openwrt-mediatek-filogic-bananapi_bpi-r4-sdcard.img.gz" \
+              "openwrt-mediatek-filogic-bananapi_bpi-r4-emmc-img.bin" \
+              "openwrt-mediatek-filogic-bananapi_bpi-r4-snand-img.bin"
 
-          # 4GB PoE
-          make_release_dir rel-4gb-poe \
-            "openwrt-mediatek-filogic-bananapi_bpi-r4-poe-squashfs-sysupgrade.itb" \
-            "bpi-r4-poe.itb" \
-            "openwrt-mediatek-filogic-bananapi_bpi-r4-poe-nvme-img.bin" \
-            "openwrt-mediatek-filogic-bananapi_bpi-r4-poe-sdcard.img.gz" \
-            "openwrt-mediatek-filogic-bananapi_bpi-r4-poe-emmc-img.bin" \
-            "openwrt-mediatek-filogic-bananapi_bpi-r4-poe-snand-img.bin"
+            # 4GB PoE
+            make_release_dir rel-4gb-poe \
+              "openwrt-mediatek-filogic-bananapi_bpi-r4-poe-squashfs-sysupgrade.itb" \
+              "bpi-r4-poe.itb" \
+              "openwrt-mediatek-filogic-bananapi_bpi-r4-poe-nvme-img.bin" \
+              "openwrt-mediatek-filogic-bananapi_bpi-r4-poe-sdcard.img.gz" \
+              "openwrt-mediatek-filogic-bananapi_bpi-r4-poe-emmc-img.bin" \
+              "openwrt-mediatek-filogic-bananapi_bpi-r4-poe-snand-img.bin"
 
-          # 8GB non-poe
-          make_release_dir rel-8gb \
-            "openwrt-mediatek-filogic-bananapi_bpi-r4-8gb-squashfs-sysupgrade.itb" \
-            "bpi-r4.itb" \
-            "openwrt-mediatek-filogic-bananapi_bpi-r4-8gb-nvme-img.bin" \
-            "openwrt-mediatek-filogic-bananapi_bpi-r4-8gb-sdcard.img.gz" \
-            "openwrt-mediatek-filogic-bananapi_bpi-r4-8gb-emmc-img.bin" \
-            "openwrt-mediatek-filogic-bananapi_bpi-r4-8gb-snand-img.bin"
+            # 8GB non-poe
+            make_release_dir rel-8gb \
+              "openwrt-mediatek-filogic-bananapi_bpi-r4-8gb-squashfs-sysupgrade.itb" \
+              "bpi-r4.itb" \
+              "openwrt-mediatek-filogic-bananapi_bpi-r4-8gb-nvme-img.bin" \
+              "openwrt-mediatek-filogic-bananapi_bpi-r4-8gb-sdcard.img.gz" \
+              "openwrt-mediatek-filogic-bananapi_bpi-r4-8gb-emmc-img.bin" \
+              "openwrt-mediatek-filogic-bananapi_bpi-r4-8gb-snand-img.bin"
 
-          # 8GB PoE
-          make_release_dir rel-8gb-poe \
-            "openwrt-mediatek-filogic-bananapi_bpi-r4-poe-8gb-squashfs-sysupgrade.itb" \
-            "bpi-r4-poe.itb" \
-            "openwrt-mediatek-filogic-bananapi_bpi-r4-poe-8gb-nvme-img.bin" \
-            "openwrt-mediatek-filogic-bananapi_bpi-r4-poe-8gb-sdcard.img.gz" \
-            "openwrt-mediatek-filogic-bananapi_bpi-r4-poe-8gb-emmc-img.bin" \
-            "openwrt-mediatek-filogic-bananapi_bpi-r4-poe-8gb-snand-img.bin"
+            # 8GB PoE
+            make_release_dir rel-8gb-poe \
+              "openwrt-mediatek-filogic-bananapi_bpi-r4-poe-8gb-squashfs-sysupgrade.itb" \
+              "bpi-r4-poe.itb" \
+              "openwrt-mediatek-filogic-bananapi_bpi-r4-poe-8gb-nvme-img.bin" \
+              "openwrt-mediatek-filogic-bananapi_bpi-r4-poe-8gb-sdcard.img.gz" \
+              "openwrt-mediatek-filogic-bananapi_bpi-r4-poe-8gb-emmc-img.bin" \
+              "openwrt-mediatek-filogic-bananapi_bpi-r4-poe-8gb-snand-img.bin"
+          fi
 
-          # SD rescue image into all release dirs
+          # Pro variants
+          if [ "$VARIANT" = "pro" ] || [ "$VARIANT" = "pro-wired" ]; then
+            make_release_dir rel-pro \
+              "openwrt-mediatek-filogic-bananapi_bpi-r4-pro-8x-squashfs-sysupgrade.itb" \
+              "bpi-r4-pro-8x.itb" \
+              "openwrt-mediatek-filogic-bananapi_bpi-r4-pro-8x-nvme-img.bin" \
+              "openwrt-mediatek-filogic-bananapi_bpi-r4-pro-8x-sdcard.img.gz" \
+              "openwrt-mediatek-filogic-bananapi_bpi-r4-pro-8x-emmc-img.bin" \
+              "openwrt-mediatek-filogic-bananapi_bpi-r4-pro-8x-snand-img.bin"
+            [ -d "rel-pro" ] && cp rescue/bpi-r4-pro-rescue-sdcard.img.gz rel-pro/
+            [ -d "rel-pro" ] && cp rescue/bpi-r4-pro-snand-img.bin rel-pro/
+          fi
+
+          # SD rescue image into all R4 release dirs
           for DIR in rel-4gb rel-4gb-poe rel-8gb rel-8gb-poe; do
-            cp rescue/bpi-r4-rescue-sdcard.img.gz "$DIR/"
+            [ -d "$DIR" ] && cp rescue/bpi-r4-rescue-sdcard.img.gz "$DIR/"
           done
 
           # UniFi variants = same firmware as 8gb wired + UniFi scripts
@@ -209,6 +234,19 @@ jobs:
             cp -r rel-8gb-poe rel-8gb-poe-unifi
 
             for DIR in rel-8gb-unifi rel-8gb-poe-unifi; do
+              cp unifi/unifi-setup.sh             "$DIR/"
+              cp unifi/rc.local                   "$DIR/"
+              cp unifi/rc-network.sh              "$DIR/"
+              cp unifi/unifi-network-setup-8gb.sh "$DIR/unifi-network-setup.sh"
+            done
+          fi
+
+          # Pro wired + UniFi = same Pro firmware + UniFi scripts
+          if [ "$VARIANT" = "pro-wired" ]; then
+            cp -r rel-pro rel-pro-wired
+            cp -r rel-pro rel-pro-unifi
+
+            for DIR in rel-pro-unifi; do
               cp unifi/unifi-setup.sh             "$DIR/"
               cp unifi/rc.local                   "$DIR/"
               cp unifi/rc-network.sh              "$DIR/"
@@ -370,5 +408,35 @@ jobs:
             Includes: unifi-setup.sh, unifi-network-setup.sh, rc.local, rc-network.sh
             Commit: ${{ github.event.inputs.repo_commit || github.sha }}
           files: rel-8gb-poe-unifi/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Publish release-pro-8x-standard
+        if: github.event.inputs.variant == 'pro'
+        run: |
+          gh release delete release-pro-8x-standard --yes 2>/dev/null || true
+          gh release create release-pro-8x-standard rel-pro/* \
+            --title "BPI-R4 Pro 8X standard WiFi (latest)" \
+            --notes "Variant: standard (WiFi) | RAM: 8GB | BPI-R4 Pro 8X | Commit: ${{ github.event.inputs.repo_commit || github.sha }}"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Publish release-pro-8x-wired
+        if: github.event.inputs.variant == 'pro-wired'
+        run: |
+          gh release delete release-pro-8x-wired --yes 2>/dev/null || true
+          gh release create release-pro-8x-wired rel-pro-wired/* \
+            --title "BPI-R4 Pro 8X wired (latest)" \
+            --notes "Variant: wired (no WiFi) | RAM: 8GB | BPI-R4 Pro 8X | Commit: ${{ github.event.inputs.repo_commit || github.sha }}"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Publish release-pro-8x-unifi
+        if: github.event.inputs.variant == 'pro-wired'
+        run: |
+          gh release delete release-pro-8x-unifi --yes 2>/dev/null || true
+          gh release create release-pro-8x-unifi rel-pro-unifi/* \
+            --title "BPI-R4 Pro 8X wired UniFi (latest)" \
+            --notes "Variant: wired (no WiFi) | RAM: 8GB | BPI-R4 Pro 8X | UniFi stack | Commit: ${{ github.event.inputs.repo_commit || github.sha }}"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
