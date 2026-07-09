@@ -1,0 +1,29 @@
+#!/bin/sh
+
+# BPI-R4 Pro 8X Wired - Basic LAN + WAN
+# Выполняется только один раз
+
+# Если уже настраивали — выходим
+uci -q get network.lan.pro8x_configured && exit 0
+
+# === LAN ===
+uci set network.lan.proto='static'
+uci set network.lan.ipaddr='192.168.1.1'
+uci set network.lan.netmask='255.255.255.0'
+
+# === WAN ===
+uci set network.wan.proto='dhcp'
+uci set network.wan.device='eth1'
+
+# === WAN6 (IPv6) ===
+uci set network.wan6.proto='dhcpv6'
+uci set network.wan6.device='eth1'
+uci set network.wan6.disabled='0'
+uci set network.wan6.reqaddress='try'
+uci set network.wan6.reqprefix='auto'
+
+# Маркер (чтобы скрипт больше никогда не запускался)
+uci set network.lan.pro8x_configured='1'
+
+uci commit network
+exit 0
